@@ -49,7 +49,7 @@ public static class MainMenu
                     Console.Clear();
                     return null;
                 case ConsoleKey.Enter:
-                    if (selected == 1 && !File.Exists("saves/company.json"))
+                    if (selected == 1 && !File.Exists(AppPaths.SaveFile))
                     {
                         error = "Сохранённая игра не найдена.";
                         dirty = true;
@@ -95,7 +95,7 @@ public static class MainMenu
             At(5 + i * 2, Center(marker + Items[i], boxWidth), i == selected ? Ink.Command : Ink.Text);
         }
         At(16, Center("Стрелки / W,S — выбор    Enter — открыть", boxWidth), Ink.Muted);
-        bool saveExists = File.Exists("saves/company.json");
+        bool saveExists = File.Exists(AppPaths.SaveFile);
         At(17, Center(saveExists ? "Сохранённая игра найдена" : "Сохранённой игры пока нет", boxWidth), saveExists ? Ink.Success : Ink.Muted);
         At(19, Center(error ?? "", boxWidth), error is null ? Ink.Text : Ink.Error);
     }

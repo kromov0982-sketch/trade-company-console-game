@@ -44,7 +44,7 @@ public static class Dashboard
                 if (dirty)
                 {
                     try { Draw(session, input.ToString(), caret, ref scroll, width, height); }
-                    catch (ArgumentOutOfRangeException) { previousWidth = 0; }
+                    catch (ArgumentOutOfRangeException e) { Logger.Error("Ошибка перерисовки после изменения размера окна.", e); previousWidth = 0; }
                     dirty = false;
                 }
                 if (!Console.KeyAvailable) { Thread.Sleep(30); continue; }

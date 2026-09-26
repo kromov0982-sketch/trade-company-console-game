@@ -2,4 +2,5 @@
 bin/
 obj/
 saves/
+logs/
 release/

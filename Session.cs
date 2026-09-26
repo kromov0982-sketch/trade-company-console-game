@@ -30,7 +30,7 @@ public sealed class Session : IDisposable
             "Новая карта создана. Сравните цены и таблицу путей, затем выберите первый торговый маршрут.");
     }
 
-    public static Session LoadGame() => new(Game.Load("saves/company.json"), "Игра загружена.");
+    public static Session LoadGame() => new(Game.Load(AppPaths.SaveFile), "Игра загружена.");
 
     public static Session HostGame(CoopLink link)
     {
@@ -51,6 +51,7 @@ public sealed class Session : IDisposable
         {
             if (packet.Type == "disconnect")
             {
+                Logger.Error("Сетевое соединение со вторым игроком разорвано.");
                 Error = true;
                 Message = "Соединение со вторым игроком потеряно. Возврат в меню — команда «меню».";
                 HostReady = ClientReady = false;
@@ -140,6 +141,7 @@ public sealed class Session : IDisposable
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException or FormatException or OverflowException or IOException or System.Text.Json.JsonException or UnauthorizedAccessException)
         {
+            Logger.Error("Ошибка выполнения игровой команды.", e);
             Error = true;
             Message = "Ошибка: " + e.Message;
         }
@@ -165,7 +167,7 @@ public sealed class Session : IDisposable
     });
 
     private string SelectMarket(string city) { Market = Game.CityKey(city); return "Открыт рынок: " + Ru.Name(Market); }
-    private string Save() { Game.Save("saves/company.json"); return "Игра сохранена."; }
-    private string Load() { Game = Game.Load("saves/company.json"); return "Игра загружена."; }
+    private string Save() { Game.Save(AppPaths.SaveFile); return "Игра сохранена."; }
+    private string Load() { Game = Game.Load(AppPaths.SaveFile); return "Игра загружена."; }
     public void Dispose() => link?.Dispose();
 }

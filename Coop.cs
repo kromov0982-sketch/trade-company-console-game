@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.NetworkInformation;
 using System.Text.Json;
 
 namespace TradeCompany;
@@ -14,6 +15,8 @@ public sealed class CoopPacket
     public bool HostReady { get; set; }
     public bool ClientReady { get; set; }
 }
+
+public sealed record LocalNetworkAddress(string Adapter, string Address, bool IsRadmin);
 
 public sealed class CoopLink : IDisposable
 {
@@ -62,6 +65,7 @@ public sealed class CoopLink : IDisposable
         try { lock (sendLock) writer.WriteLine(json); }
         catch (Exception e) when (e is IOException or SocketException or ObjectDisposedException)
         {
+            Logger.Error("Не удалось отправить сетевой пакет.", e);
             ReportDisconnect();
         }
     }
@@ -78,7 +82,10 @@ public sealed class CoopLink : IDisposable
                 if (packet is not null) incoming.Enqueue(packet);
             }
         }
-        catch (Exception e) when (e is IOException or SocketException or JsonException or ObjectDisposedException) { }
+        catch (Exception e) when (e is IOException or SocketException or JsonException or ObjectDisposedException)
+        {
+            if (!disposed) Logger.Error("Ошибка чтения данных сетевой игры.", e);
+        }
         finally
         {
             if (!disposed) ReportDisconnect();
@@ -99,15 +106,25 @@ public sealed class CoopLink : IDisposable
         writer.Dispose();
     }
 
-    public static string LocalAddresses()
+    public static IReadOnlyList<LocalNetworkAddress> LocalAddresses()
     {
         try
         {
-            var addresses = Dns.GetHostEntry(Dns.GetHostName()).AddressList
-                .Where(a => a.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a))
-                .Select(a => a.ToString()).Distinct().ToArray();
-            return addresses.Length == 0 ? "127.0.0.1" : string.Join("  |  ", addresses);
+            return NetworkInterface.GetAllNetworkInterfaces()
+                .Where(adapter => adapter.OperationalStatus == OperationalStatus.Up)
+                .SelectMany(adapter => adapter.GetIPProperties().UnicastAddresses
+                    .Where(address => address.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(address.Address))
+                    .Select(address => new LocalNetworkAddress(adapter.Name, address.Address.ToString(),
+                        adapter.Name.Contains("Radmin", StringComparison.OrdinalIgnoreCase) || address.Address.GetAddressBytes()[0] == 26)))
+                .DistinctBy(item => item.Address)
+                .OrderByDescending(item => item.IsRadmin)
+                .ThenBy(item => item.Adapter)
+                .ToArray();
         }
-        catch (SocketException) { return "127.0.0.1"; }
+        catch (Exception e) when (e is NetworkInformationException or SocketException)
+        {
+            Logger.Error("Не удалось определить локальные IP-адреса.", e);
+            return [new LocalNetworkAddress("Локальный компьютер", "127.0.0.1", false)];
+        }
     }
 }

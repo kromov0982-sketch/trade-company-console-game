@@ -3,6 +3,8 @@ using TradeCompany;
 
 Console.OutputEncoding = Encoding.UTF8;
 Console.InputEncoding = Encoding.UTF8;
+AppPaths.Initialize();
+Logger.Install();
 if (args.Contains("--self-test")) { SelfTest.Run(); return; }
 if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
 {
@@ -26,6 +28,7 @@ if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
             try { session = Session.LoadGame(); }
             catch (Exception e) when (e is IOException or InvalidOperationException or System.Text.Json.JsonException or UnauthorizedAccessException)
             {
+                Logger.Error("Не удалось загрузить сохранённую игру из главного меню.", e);
                 MainMenu.ShowError("Не удалось загрузить игру: " + e.Message);
                 continue;
             }
