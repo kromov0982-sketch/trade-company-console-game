@@ -10,7 +10,7 @@ public sealed class MapRoad
 {
     public string A { get; set; } = "";
     public string B { get; set; } = "";
-    public int Days { get; set; }
+    public decimal Days { get; set; }
 }
 
 public sealed class WorldMap
@@ -56,19 +56,22 @@ public sealed class WorldMap
 
     private void AddRoad(string a, string b)
     {
-        int days = Math.Max(1, (int)Math.Ceiling(Distance(Cities[a], Cities[b]) / 170.0));
+        var start = Screen(Cities[a], 64, 12);
+        var end = Screen(Cities[b], 64, 12);
+        int visibleRoadCells = Math.Max(1, Math.Max(Math.Abs(start.X - end.X), Math.Abs(start.Y - end.Y)) - 1);
+        decimal days = visibleRoadCells * 0.5m;
         Roads.Add(new MapRoad { A = a, B = b, Days = days });
     }
 
-    public int TravelDays(string from, string to)
+    public decimal TravelDays(string from, string to)
     {
-        var distances = Game.Cities.ToDictionary(c => c, _ => int.MaxValue);
+        var distances = Game.Cities.ToDictionary(c => c, _ => decimal.MaxValue);
         distances[from] = 0;
         var remaining = new HashSet<string>(Game.Cities);
         while (remaining.Count > 0)
         {
             string current = remaining.MinBy(c => distances[c])!;
-            if (distances[current] == int.MaxValue) break;
+            if (distances[current] == decimal.MaxValue) break;
             remaining.Remove(current);
             if (current == to) return distances[current];
             foreach (var road in Roads.Where(r => r.A == current || r.B == current))
@@ -82,8 +85,11 @@ public sealed class WorldMap
 
     public string[] Render(int requestedWidth, int requestedHeight)
     {
-        int width = Math.Clamp(requestedWidth, 30, 72);
-        int height = Math.Clamp(requestedHeight, 9, 19);
+        // 64 x 12 is the scale used to calculate road time: every visible
+        // interior road cell is exactly half a day. Smaller windows crop the
+        // panel, while normal and full-screen layouts retain this scale.
+        int width = 64;
+        int height = 12;
         var canvas = new char[height, width];
         for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)

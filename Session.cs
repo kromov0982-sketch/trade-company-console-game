@@ -26,9 +26,8 @@ public sealed class Session : IDisposable
     public static Session NewGame()
     {
         var game = new Game();
-        int days = game.World.TravelDays("oakwood", "crossroads");
         return new Session(game,
-            $"Новая карта создана. Первый рейс: купить 1 древесина 30; ехать 1 перекрёсток; далее {days}; продать 1 древесина 30.");
+            "Новая карта создана. Сравните цены и таблицу путей, затем выберите первый торговый маршрут.");
     }
 
     public static Session LoadGame() => new(Game.Load("saves/company.json"), "Игра загружена.");

@@ -7,7 +7,7 @@ public sealed class Wagon
     public int Id { get; set; }
     public string City { get; set; } = "oakwood";
     public string? Destination { get; set; }
-    public int DaysLeft { get; set; }
+    public decimal DaysLeft { get; set; }
     public Dictionary<string, int> Cargo { get; set; } = Game.EmptyCargo();
     public int Used => Cargo.Values.Sum();
 }
@@ -97,11 +97,11 @@ public sealed class Game
     {
         city = CityKey(city); var w = Idle(id, player);
         if (city == w.City) throw new InvalidOperationException("Повозка уже здесь.");
-        int days = World.TravelDays(w.City, city);
-        int fee = days * 8;
+        decimal days = World.TravelDays(w.City, city);
+        int fee = (int)Math.Ceiling(days * 8);
         if (GoldFor(player) < fee) throw new InvalidOperationException($"Для рейса нужно {fee} монет.");
         SetGold(player, GoldFor(player) - fee); w.Destination = city; w.DaysLeft = days;
-        return $"Повозка #{id} отправлена в город {Ru.Name(city)}: {days} дн. Все расходы рейса ({fee}) оплачены.";
+        return $"Повозка #{id} отправлена в город {Ru.Name(city)}: {FormatDays(days)}. Все расходы рейса ({fee}) оплачены.";
     }
     public string Advance(int days)
     {
@@ -111,7 +111,10 @@ public sealed class Game
         {
             Day++;
             foreach (var (player, w) in AllWagons().Where(x => x.Wagon.Destination is not null))
-                if (--w.DaysLeft == 0) { w.City = w.Destination!; w.Destination = null; news.Add($"День {Day}: повозка #{w.Id} торговца {player + 1} прибыла в город {Ru.Name(w.City)}."); }
+            {
+                w.DaysLeft -= 1;
+                if (w.DaysLeft <= 0) { w.DaysLeft = 0; w.City = w.Destination!; w.Destination = null; news.Add($"День {Day}: повозка #{w.Id} торговца {player + 1} прибыла в город {Ru.Name(w.City)}."); }
+            }
             for (int c = 0; c < Cities.Length; c++)
                 for (int g = 0; g < Goods.Length; g++)
                 {
@@ -155,6 +158,11 @@ public sealed class Game
         source[good] -= amount; destination[good] += amount;
         return $"Перемещено {Ru.Name(good)}: {amount} шт. {(storing ? "на склад" : "в повозку")}.";
     }
+    public static string FormatDays(decimal days)
+    {
+        string value = days.ToString(days % 1 == 0 ? "0" : "0.0", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"));
+        return value + (days == 1 ? " день" : days is >= 2 and <= 4 ? " дня" : " дней");
+    }
     public void Save(string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
@@ -172,10 +180,10 @@ public sealed class Game
         bool MerchantValid(int gold, List<Wagon>? wagons, Dictionary<string, Dictionary<string, int>>? warehouses) =>
             gold >= 0 && wagons is not null && wagons.Count > 0 && warehouses is not null &&
             wagons.Select(w => w.Id).Distinct().Count() == wagons.Count &&
-            wagons.All(w => w.Id >= 1 && Cities.Contains(w.City) && CargoValid(w.Cargo, 60) && (w.Destination is null ? w.DaysLeft == 0 : Cities.Contains(w.Destination) && w.DaysLeft is >= 1 and <= 20)) &&
+            wagons.All(w => w.Id >= 1 && Cities.Contains(w.City) && CargoValid(w.Cargo, 60) && (w.Destination is null ? w.DaysLeft == 0 : Cities.Contains(w.Destination) && w.DaysLeft is >= 0.5m and <= 100)) &&
             warehouses.All(kv => Cities.Contains(kv.Key) && CargoValid(kv.Value, 300));
         if (game.Wagons.Select(w => w.Id).Distinct().Count() != game.Wagons.Count ||
-            game.Wagons.Any(w => w.Id < 1 || !Cities.Contains(w.City) || !CargoValid(w.Cargo, 60) || (w.Destination is null ? w.DaysLeft != 0 : !Cities.Contains(w.Destination) || w.DaysLeft is < 1 or > 20)) ||
+            game.Wagons.Any(w => w.Id < 1 || !Cities.Contains(w.City) || !CargoValid(w.Cargo, 60) || (w.Destination is null ? w.DaysLeft != 0 : !Cities.Contains(w.Destination) || w.DaysLeft is < 0.5m or > 100)) ||
             !Cities.All(c => game.Stocks.TryGetValue(c, out var stock) && CargoValid(stock, 1000000)) ||
             game.Warehouses.Any(kv => !Cities.Contains(kv.Key) || !CargoValid(kv.Value, 300)) ||
             game.SecondMerchant is { } second && !MerchantValid(second.Gold, second.Wagons, second.Warehouses) ||

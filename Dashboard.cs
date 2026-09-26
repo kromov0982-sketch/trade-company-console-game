@@ -195,7 +195,22 @@ public static class Dashboard
         foreach (string mapLine in g.World.Render(mapWidth, mapHeight)) Line(mapLine, Ink.Muted);
         for (int i = 0; i < Game.Cities.Length; i += 2)
             Line($"{i + 1} {Ru.Name(Game.Cities[i]),-18}  {i + 2} {Ru.Name(Game.Cities[i + 1])}");
-        Line("# дорога   ~ вода   ^ горы   * лес", Ink.Muted);
+        Line("# = 0,5 дня пути   ~ вода   ^ горы   * лес", Ink.Muted);
+        string origin = wagons.FirstOrDefault()?.City ?? "oakwood";
+        Line($"ПУТИ ИЗ ГОРОДА {Ru.Name(origin).ToUpperInvariant()}", Ink.Heading);
+        var destinations = Game.Cities.Where(city => city != origin).ToArray();
+        for (int i = 0; i < destinations.Length; i += 2)
+        {
+            string Route(string city)
+            {
+                decimal days = g.World.TravelDays(origin, city);
+                int fee = (int)Math.Ceiling(days * 8);
+                return $"{Ru.Name(city)} {Game.FormatDays(days)} / {fee}м";
+            }
+            string leftRoute = Route(destinations[i]);
+            string rightRoute = i + 1 < destinations.Length ? Route(destinations[i + 1]) : "";
+            Line($"{leftRoute,-31}{rightRoute}");
+        }
         Line("");
         Line("РЫНОК: " + Ru.Name(s.Market), Ink.Heading);
         Line("Товар         Запас Купить Продать", Ink.Muted);
@@ -206,7 +221,7 @@ public static class Dashboard
         foreach (var w in wagons)
         {
             Line($"#{w.Id} {Ru.Name(w.City)}" + (w.Destination is null ? " | стоянка" : $" -> {Ru.Name(w.Destination)}"), Ink.Command);
-            if (w.Destination is not null) Line($"   До прибытия: {w.DaysLeft} дн.");
+            if (w.Destination is not null) Line($"   До прибытия: {Game.FormatDays(w.DaysLeft)}.");
             Line($"   Груз {w.Used}/60: " + Cargo(w.Cargo));
         }
         Line("");
