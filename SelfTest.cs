@@ -17,6 +17,7 @@ public static class SelfTest
         Check(Game.Cities.All(a => Game.Cities.All(b => a == b || g.World.TravelDays(a, b) > 0)), "generated map connects every city");
         var renderedMap = g.World.Render(50, 12);
         Check(renderedMap.Length == 12 && renderedMap.All(line => line.Length == 64), "generated map uses half-day road scale");
+        Check(g.World.Render(64, 12, [new MapMarker('A', g.Wagons[0])]).Any(line => line.Contains('A')), "map shows merchant position");
         int initial = g.Gold, price = g.Price("oakwood", "wood", true);
         g.Trade(1, "wood", 30, true);
         Check(g.Wagons[0].Cargo["wood"] == 30 && g.Stocks["oakwood"]["wood"] == 70, "purchase conserves goods");
@@ -28,6 +29,7 @@ public static class SelfTest
         Reject(() => g.Trade(1, "iron", 1, false), "cannot sell absent cargo");
         decimal routeDays = g.World.TravelDays("oakwood", "crossroads");
         g.Travel(1, "crossroads");
+        Check(g.Wagons[0].Route.Count > 1 && g.Wagons[0].TotalDays == routeDays, "wagon stores generated route");
         Check(g.Gold == before - (int)Math.Ceiling(routeDays * 8), "route cost charged once");
         Reject(() => g.Trade(1, "wood", 1, false), "cannot trade in transit");
         int routeTurns = (int)Math.Ceiling(routeDays);

@@ -9,6 +9,8 @@ public sealed class Wagon
     public string? Destination { get; set; }
     public decimal DaysLeft { get; set; }
     public Dictionary<string, int> Cargo { get; set; } = Game.EmptyCargo();
+    public List<string> Route { get; set; } = [];
+    public decimal TotalDays { get; set; }
     public int Used => Cargo.Values.Sum();
 }
 
@@ -97,10 +99,11 @@ public sealed class Game
     {
         city = CityKey(city); var w = Idle(id, player);
         if (city == w.City) throw new InvalidOperationException("Повозка уже здесь.");
+        var route = World.FindRoute(w.City, city);
         decimal days = World.TravelDays(w.City, city);
         int fee = (int)Math.Ceiling(days * 8);
         if (GoldFor(player) < fee) throw new InvalidOperationException($"Для рейса нужно {fee} монет.");
-        SetGold(player, GoldFor(player) - fee); w.Destination = city; w.DaysLeft = days;
+        SetGold(player, GoldFor(player) - fee); w.Destination = city; w.DaysLeft = days; w.TotalDays = days; w.Route = route;
         return $"Повозка #{id} отправлена в город {Ru.Name(city)}: {FormatDays(days)}. Все расходы рейса ({fee}) оплачены.";
     }
     public string Advance(int days)
@@ -113,7 +116,7 @@ public sealed class Game
             foreach (var (player, w) in AllWagons().Where(x => x.Wagon.Destination is not null))
             {
                 w.DaysLeft -= 1;
-                if (w.DaysLeft <= 0) { w.DaysLeft = 0; w.City = w.Destination!; w.Destination = null; news.Add($"День {Day}: повозка #{w.Id} торговца {player + 1} прибыла в город {Ru.Name(w.City)}."); }
+                if (w.DaysLeft <= 0) { w.DaysLeft = 0; w.City = w.Destination!; w.Destination = null; w.TotalDays = 0; w.Route = []; news.Add($"День {Day}: повозка #{w.Id} торговца {player + 1} прибыла в город {Ru.Name(w.City)}."); }
             }
             for (int c = 0; c < Cities.Length; c++)
                 for (int g = 0; g < Goods.Length; g++)

@@ -192,10 +192,13 @@ public static class Dashboard
         }
         int mapWidth = Math.Clamp(availableWidth, 30, 72);
         int mapHeight = mapWidth >= 60 ? (s.IsCoop ? 10 : 12) : 9;
-        foreach (string mapLine in g.World.Render(mapWidth, mapHeight)) Line(mapLine, Ink.Muted);
+        var markers = g.WagonsFor(0).Select(w => new MapMarker('A', w)).ToList();
+        if (g.SecondMerchant is not null) markers.AddRange(g.WagonsFor(1).Select(w => new MapMarker('B', w)));
+        foreach (string mapLine in g.World.Render(mapWidth, mapHeight, markers)) Line(mapLine, Ink.Muted);
         for (int i = 0; i < Game.Cities.Length; i += 2)
             Line($"{i + 1} {Ru.Name(Game.Cities[i]),-18}  {i + 2} {Ru.Name(Game.Cities[i + 1])}");
-        Line("# = 0,5 дня пути   ~ вода   ^ горы   * лес", Ink.Muted);
+        Line("# 0,5 дня   A торговец 1   B торговец 2   @ оба", Ink.Muted);
+        Line("~ вода   ^ горы   * лес", Ink.Muted);
         string origin = wagons.FirstOrDefault()?.City ?? "oakwood";
         Line($"ПУТИ ИЗ ГОРОДА {Ru.Name(origin).ToUpperInvariant()}", Ink.Heading);
         var destinations = Game.Cities.Where(city => city != origin).ToArray();
