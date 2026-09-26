@@ -117,7 +117,7 @@ public static class Dashboard
             Paint(0, 0, usable, new Part(" ТОРГОВАЯ КОМПАНИЯ", Ink.Heading), new Part($"   День {s.Game.Day}  |  Монеты {s.Game.GoldFor(localPlayer)} / 5000{network}", Ink.Parameter));
             Paint(0, 1, usable, new Part(new string('-', usable), Ink.Muted));
             int contentHeight = height - 7;
-            var lines = Company(s);
+            var lines = Company(s, left);
             scroll = Math.Clamp(scroll, 0, Math.Max(0, lines.Count - contentHeight));
             for (int y = 0; y < contentHeight; y++)
             {
@@ -174,7 +174,7 @@ public static class Dashboard
         Console.CursorVisible = true;
     }
 
-    private static List<Part[]> Company(Session s)
+    private static List<Part[]> Company(Session s, int availableWidth)
     {
         var g = s.Game;
         int player = s.IsCoop && !s.IsHost ? 1 : 0;
@@ -190,9 +190,12 @@ public static class Dashboard
             int rival = player == 0 ? 1 : 0;
             Line($"Вы: торговец {player + 1}, {g.GoldFor(player)} монет | торговец {rival + 1}: {g.GoldFor(rival)} монет");
         }
-        Line("             [Северорудск]");
-        Line("                  | 3 дн.", Ink.Muted);
-        Line("Дубрава--2--Перекрёсток--4--Речнопорт");
+        int mapWidth = Math.Clamp(availableWidth, 30, 72);
+        int mapHeight = mapWidth >= 60 ? (s.IsCoop ? 10 : 12) : 9;
+        foreach (string mapLine in g.World.Render(mapWidth, mapHeight)) Line(mapLine, Ink.Muted);
+        for (int i = 0; i < Game.Cities.Length; i += 2)
+            Line($"{i + 1} {Ru.Name(Game.Cities[i]),-18}  {i + 2} {Ru.Name(Game.Cities[i + 1])}");
+        Line("# дорога   ~ вода   ^ горы   * лес", Ink.Muted);
         Line("");
         Line("РЫНОК: " + Ru.Name(s.Market), Ink.Heading);
         Line("Товар         Запас Купить Продать", Ink.Muted);

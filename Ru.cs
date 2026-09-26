@@ -6,6 +6,8 @@ public static class Ru
     {
         ["oakwood"] = "Дубрава", ["crossroads"] = "Перекрёсток",
         ["northmine"] = "Северорудск", ["riverport"] = "Речнопорт",
+        ["hillford"] = "Холмоград", ["grainfield"] = "Хлебное",
+        ["weavertown"] = "Ткацк", ["ironbay"] = "Железобухта",
         ["grain"] = "зерно", ["wood"] = "древесина", ["iron"] = "железо",
         ["tools"] = "инструменты", ["cloth"] = "ткань"
     };

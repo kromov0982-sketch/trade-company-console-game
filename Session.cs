@@ -23,8 +23,13 @@ public sealed class Session : IDisposable
         IsHost = isHost;
     }
 
-    public static Session NewGame() => new(new Game(),
-        "Новая компания основана. Первый рейс: купить 1 древесина 30; ехать 1 перекрёсток; далее 2; продать 1 древесина 30.");
+    public static Session NewGame()
+    {
+        var game = new Game();
+        int days = game.World.TravelDays("oakwood", "crossroads");
+        return new Session(game,
+            $"Новая карта создана. Первый рейс: купить 1 древесина 30; ехать 1 перекрёсток; далее {days}; продать 1 древесина 30.");
+    }
 
     public static Session LoadGame() => new(Game.Load("saves/company.json"), "Игра загружена.");
 

@@ -12,6 +12,11 @@ public static class SelfTest
             throw new Exception("FAIL: " + name);
         }
         var g = new Game();
+        var anotherWorld = new Game();
+        Check(g.World.Seed != anotherWorld.World.Seed, "new games generate different maps");
+        Check(Game.Cities.All(a => Game.Cities.All(b => a == b || g.World.TravelDays(a, b) > 0)), "generated map connects every city");
+        var renderedMap = g.World.Render(50, 12);
+        Check(renderedMap.Length == 12 && renderedMap.All(line => line.Length == 50), "generated map adapts to viewport");
         int initial = g.Gold, price = g.Price("oakwood", "wood", true);
         g.Trade(1, "wood", 30, true);
         Check(g.Wagons[0].Cargo["wood"] == 30 && g.Stocks["oakwood"]["wood"] == 70, "purchase conserves goods");
@@ -21,10 +26,11 @@ public static class SelfTest
         Check(g.Gold == before && g.Wagons[0].Used == 30, "rejected transaction is atomic");
         Reject(() => g.Trade(1, "wood", -1, true), "negative quantity rejected");
         Reject(() => g.Trade(1, "iron", 1, false), "cannot sell absent cargo");
+        int routeDays = g.World.TravelDays("oakwood", "crossroads");
         g.Travel(1, "crossroads");
-        Check(g.Gold == before - 16, "route cost charged once");
+        Check(g.Gold == before - routeDays * 8, "route cost charged once");
         Reject(() => g.Trade(1, "wood", 1, false), "cannot trade in transit");
-        g.Advance(1); Check(g.Wagons[0].DaysLeft == 1, "travel consumes days");
+        if (routeDays > 1) { g.Advance(routeDays - 1); Check(g.Wagons[0].DaysLeft == 1, "travel consumes days"); }
         g.Advance(1); Check(g.Wagons[0].City == "crossroads" && g.Wagons[0].Destination is null, "arrival");
         g.Trade(1, "wood", 30, false); Check(g.Gold > initial, "starter route profitable");
         var local = new Game(); local.Trade(1, "wood", 30, true); local.Trade(1, "wood", 30, false);
@@ -41,9 +47,10 @@ public static class SelfTest
         string path = Path.Combine(Path.GetTempPath(), $"trade-test-{Guid.NewGuid()}.json");
         try
         {
+            int savedJourneyDays = g.World.TravelDays("crossroads", "riverport");
             g.Travel(1, "riverport"); g.Save(path); var loaded = Game.Load(path);
-            Check(loaded.Gold == g.Gold && loaded.Day == g.Day && loaded.Wagons[0].Destination == "riverport" && loaded.Wagons[0].Cargo["grain"] == 10 && loaded.Warehouses.ContainsKey("crossroads"), "save/load round trip");
-            loaded.Advance(4); Check(loaded.Wagons[0].City == "riverport", "saved journey resumes");
+            Check(loaded.Gold == g.Gold && loaded.Day == g.Day && loaded.World.Seed == g.World.Seed && loaded.Wagons[0].Destination == "riverport" && loaded.Wagons[0].Cargo["grain"] == 10 && loaded.Warehouses.ContainsKey("crossroads"), "save/load round trip");
+            loaded.Advance(savedJourneyDays); Check(loaded.Wagons[0].City == "riverport", "saved journey resumes");
             File.WriteAllText(path, "{\"Version\":99}"); Reject(() => Game.Load(path), "unsupported save rejected");
         }
         finally { if (File.Exists(path)) File.Delete(path); }
