@@ -50,7 +50,7 @@ public static class Dashboard
             "# ФИНАНСОВОЕ ВРЕМЯ",
             "• Семь игровых дней считаются финансовым кварталом. В конце квартала купленные предприятия выплачивают доход.",
             "• Четыре квартала, или 28 дней, образуют финансовый год.",
-            "• Время движется только после команды «далее». В совместной игре новый день начинается, когда оба торговца готовы."
+            "• Время движется после нажатия большой кнопки «КОНЕЦ ХОДА». Команда «далее» также доступна для пропуска нескольких дней. В совместной игре новый день начинается, когда оба торговца готовы."
         ],
         [
             "# ЦЕНЫ И ЗАПАСЫ",
@@ -471,7 +471,7 @@ public static class Dashboard
             }
             void Button(int row, string text, Action activate)
             {
-                if (row >= height - 5) return;
+                if (row >= height - 6) return;
                 Paint(rx, row, right, new Part(text, Ink.Command));
                 Hits.Add(new Hit(rx, row, Math.Min(right, usable - rx), activate));
             }
@@ -510,7 +510,7 @@ public static class Dashboard
             }
             else
             {
-            for (int i = 0; i < Commands.Length && i + 3 < height - 5; i++)
+            for (int i = 0; i < Commands.Length && i + 3 < height - 6; i++)
             {
                 string command = Commands[i].Command.Split(" / ")[0];
                 Button(i + 3, Commands[i].Command + " " + Commands[i].Args, () =>
@@ -522,10 +522,17 @@ public static class Dashboard
                 });
                 Paint(rx, i + 3, right, new Part(Commands[i].Command, Ink.Command), new Part(" " + Commands[i].Args, Ink.Parameter));
             }
-            string[] notes = ["ЛКМ: команда и выбор параметров.", "Повозка: 500; склад: 400 монет.", "Рейс: 8 монет за день пути.", "Время: только по команде далее.", "Колесо / PgUp, PgDn: прокрутка.", "Esc: очистить ввод / отменить выбор."];
+            string[] notes = ["ЛКМ: команда и выбор параметров.", "Повозка: 500; склад: 400 монет.", "Рейс: 8 монет за день пути.", "Время: кнопка КОНЕЦ ХОДА.", "Колесо / PgUp, PgDn: прокрутка.", "Esc: очистить ввод / отменить выбор."];
             int notesRow = Commands.Length + 4;
-            for (int i = 0; i < notes.Length && i + notesRow < height - 5; i++) Paint(rx, i + notesRow, right, new Part(notes[i]));
+            for (int i = 0; i < notes.Length && i + notesRow < height - 6; i++) Paint(rx, i + notesRow, right, new Part(notes[i]));
             }
+            bool localReady = s.IsCoop && (s.IsHost ? s.HostReady : s.ClientReady);
+            string turnLabel = localReady ? "[ ОЖИДАНИЕ ВТОРОГО ИГРОКА ]" : "[ КОНЕЦ ХОДА ]";
+            int turnPadding = Math.Max(0, (right - turnLabel.Length) / 2);
+            Paint(rx, height - 6, right, new Part(new string('═', turnPadding), localReady ? Ink.Muted : Ink.Success),
+                new Part(turnLabel, localReady ? Ink.Muted : Ink.Success),
+                new Part(new string('═', Math.Max(0, right - turnPadding - turnLabel.Length)), localReady ? Ink.Muted : Ink.Success));
+            if (!localReady) Hits.Add(new Hit(rx, height - 6, Math.Min(right, usable - rx), () => s.Execute("далее")));
             Paint(0, height - 5, usable, new Part(new string('-', usable), Ink.Muted));
         }
         if (mapOpen || contractsOpen || helpOpen)
