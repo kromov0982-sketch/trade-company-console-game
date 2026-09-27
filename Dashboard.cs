@@ -453,10 +453,14 @@ public static class Dashboard
             Paint(0, 0, usable, new Part(" ТОРГОВАЯ КОМПАНИЯ", Ink.Heading),
                 new Part($"   {Game.FinancialDate(s.Game.Day)} | Казна {s.Game.GoldFor(localPlayer)} | Капитал {s.Game.CompanyValue(localPlayer)} / {Game.TargetCompanyValue}{network}", Ink.Parameter));
             Paint(0, 1, usable, new Part(new string('-', usable), Ink.Muted));
-            Paint(0, 2, left, new Part(" [КАРТА]", Ink.Command), new Part(" [КОНТРАКТЫ]", Ink.Success), new Part(" [?]", Ink.Parameter));
-            Hits.Add(new Hit(1, 2, Math.Min(11, left - 1), () => mapOpen = true));
-            Hits.Add(new Hit(10, 2, Math.Min(13, left - 10), () => contractsOpen = true));
-            Hits.Add(new Hit(23, 2, Math.Min(4, left - 23), () => helpOpen = true));
+            const string mapButton = "[КАРТА]", contractsButton = "[КОНТРАКТЫ]", helpButton = "[?]";
+            Paint(0, 2, left, new Part($" {mapButton}", Ink.Command), new Part($" {contractsButton}", Ink.Success), new Part($" {helpButton}", Ink.Parameter));
+            int toolbarX = 1;
+            Hits.Add(new Hit(toolbarX, 2, mapButton.Length, () => mapOpen = true));
+            toolbarX += mapButton.Length + 1;
+            Hits.Add(new Hit(toolbarX, 2, contractsButton.Length, () => contractsOpen = true));
+            toolbarX += contractsButton.Length + 1;
+            Hits.Add(new Hit(toolbarX, 2, helpButton.Length, () => helpOpen = true));
             int contentHeight = height - 8;
             var lines = Company(s, left);
             scroll = Math.Clamp(scroll, 0, Math.Max(0, lines.Count - contentHeight));
