@@ -72,6 +72,7 @@ public sealed class WorldMap
         for (int i = 0; i < route.Count - 1; i++) total += RoadBetween(route[i], route[i + 1]).Days;
         return total;
     }
+    public bool AreNeighbors(string a, string b) => Roads.Any(r => r.A == a && r.B == b || r.A == b && r.B == a);
 
     public List<string> FindRoute(string from, string to)
     {
@@ -105,17 +106,14 @@ public sealed class WorldMap
 
     public string[] Render(int requestedWidth, int requestedHeight, IEnumerable<MapMarker>? markers = null)
     {
-        // 64 x 12 is the scale used to calculate road time: every visible
-        // interior road cell is exactly half a day. Smaller windows crop the
-        // panel, while normal and full-screen layouts retain this scale.
-        int width = 64;
-        int height = 12;
+        int width = Math.Clamp(requestedWidth, 30, 140);
+        int height = Math.Clamp(requestedHeight, 9, 32);
         var canvas = new char[height, width];
         for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
             {
                 int value = Hash(x, y, Seed) % 100;
-                canvas[y, x] = value < 7 ? '~' : value < 16 ? '^' : value < 24 ? '*' : '.';
+                canvas[y, x] = value < 6 ? '≈' : value < 12 ? '▲' : value < 19 ? '♣' : ' ';
             }
 
         foreach (var road in Roads)
@@ -133,6 +131,9 @@ public sealed class WorldMap
             foreach (var marker in markers) PlaceMarker(canvas, marker, width, height);
         return Enumerable.Range(0, height).Select(y => new string(Enumerable.Range(0, width).Select(x => canvas[y, x]).ToArray())).ToArray();
     }
+
+    public MapPoint ScreenPosition(string city, int width, int height) =>
+        Screen(Cities[Game.CityKey(city)], Math.Clamp(width, 30, 140), Math.Clamp(height, 9, 32));
 
     private void PlaceMarker(char[,] canvas, MapMarker marker, int width, int height)
     {
@@ -188,7 +189,7 @@ public sealed class WorldMap
         int error = dx + dy;
         while (true)
         {
-            canvas[y0, x0] = '#';
+            canvas[y0, x0] = '·';
             if (x0 == x1 && y0 == y1) break;
             int twice = 2 * error;
             if (twice >= dy) { error += dy; x0 += sx; }

@@ -1,0 +1,32 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Publish standalone game
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          dotnet publish TradeCompany.csproj -c Release -r win-x64 --self-contained true -o release/portable /p:Version=$version /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false
+          Copy-Item -Recurse -Force Packaging/* release/portable/
+          Compress-Archive -Path @('release/portable/TradeCompany.exe','Packaging/saves','Packaging/logs','Packaging/КАК ЗАПУСТИТЬ.txt') -DestinationPath release/TradeCompany-Windows-x64.zip -Force
+          $hash = (Get-FileHash release/TradeCompany-Windows-x64.zip -Algorithm SHA256).Hash.ToLower()
+          Set-Content -Encoding ascii release/TradeCompany-Windows-x64.zip.sha256 "$hash  TradeCompany-Windows-x64.zip"
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" release/TradeCompany-Windows-x64.zip release/TradeCompany-Windows-x64.zip.sha256 --generate-notes --verify-tag

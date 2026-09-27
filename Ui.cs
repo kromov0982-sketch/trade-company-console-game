@@ -9,7 +9,7 @@ public static class Ui
         Console.WriteLine();
         Border();
         Row("                       ТОРГОВАЯ КОМПАНИЯ");
-        Row($" День: {game.Day}    Монеты: {game.Gold}    Цель: 5000");
+        Row($" {Game.FinancialDate(game.Day)}    Казна: {game.Gold}    Капитал: {game.CompanyValue(0)} / {Game.TargetCompanyValue}");
         Border();
         Row("                         [Северорудск]");
         Row("                               | 3 дн.");
@@ -71,6 +71,11 @@ public static class Ui
         Entry("помощь", "", "Открыть эту справку.");
         Entry("карта / статус", "", "Карта, казна, повозки и склады.");
         Entry("рынок", "ГОРОД", "Посмотреть запасы и цены города.");
+        Entry("сравнить", "ГОРОД ГОРОД", "Сравнить цены и прибыль между двумя городами.");
+        Entry("разведка", "ГОРОД", "Купить свежие сведения о рынке за 40 монет.");
+        Entry("принять", "НОМЕР", "Принять доступный контракт.");
+        Entry("доставить", "НОМЕР НОМЕР_ПОВОЗКИ", "Сдать товар по контракту.");
+        Entry("предприятие", "НОМЕР", "Купить предприятие по номеру с карты.");
         Entry("купить", "НОМЕР ТОВАР КОЛИЧЕСТВО", "Купить товар в повозку.");
         Entry("продать", "НОМЕР ТОВАР КОЛИЧЕСТВО", "Продать товар из повозки.");
 
@@ -93,12 +98,9 @@ public static class Ui
         Ink.Write("  НОМЕР", Ink.Parameter); Ink.Line(" — номер повозки, например 1.");
         Ink.Write("  КОЛИЧЕСТВО", Ink.Parameter); Ink.Line(" — число единиц товара, например 30.");
         Ink.Write("  ГОРОД", Ink.Parameter); Ink.Line(" — один из городов:");
-        foreach (var pair in new[] { ("Дубрава", "древесина"), ("Перекрёсток", "зерно, инструменты"), ("Северорудск", "железо"), ("Речнопорт", "ткань") })
-        {
-            Ink.Write("    " + pair.Item1.PadRight(14), Ink.Parameter);
-            Ink.Line("производит: " + pair.Item2);
-        }
-        Ink.Write("  ТОВАР", Ink.Parameter); Ink.Line(" — зерно, древесина, железо, инструменты, ткань.");
+        foreach (string city in Game.Cities) Ink.Line("    " + Ru.Name(city), Ink.Parameter);
+        Ink.Line("  Предприятия распределяются по городам заново в каждой партии.");
+        Ink.Write("  ТОВАР", Ink.Parameter); Ink.Line(" — " + string.Join(", ", Game.Goods.Select(Ru.Name)) + ".");
 
         Ink.Section("ПРИМЕР ПЕРВОГО РЕЙСА");
         Ink.Example("купить", "1 древесина 30");

@@ -3,6 +3,7 @@ using TradeCompany;
 
 Console.OutputEncoding = Encoding.UTF8;
 Console.InputEncoding = Encoding.UTF8;
+if (args.Length == 4 && args[0] == "--apply-update") { Updater.Apply(args[1], args[2], int.Parse(args[3])); return; }
 AppPaths.Initialize();
 Logger.Install();
 if (args.Contains("--self-test")) { SelfTest.Run(); return; }
@@ -13,6 +14,11 @@ if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
     {
         Session? session = null;
         if (choice == MenuChoice.NewGame) session = Session.NewGame();
+        else if (choice == MenuChoice.Update)
+        {
+            if (Updater.CheckAndInstall()) return;
+            continue;
+        }
         else if (choice == MenuChoice.HostGame)
         {
             var link = CoopLobby.WaitForGuest();

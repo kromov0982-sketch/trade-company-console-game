@@ -4,6 +4,7 @@ public sealed class Session : IDisposable
 {
     public Game Game { get; private set; }
     public string Market { get; private set; } = "oakwood";
+    public string? ComparedMarket { get; private set; }
     public string Message { get; private set; }
     public bool Error { get; private set; }
     public bool Exit { get; private set; }
@@ -84,11 +85,25 @@ public sealed class Session : IDisposable
 
         // These commands affect only this screen and never cross the network.
         if (command == "menu" || command == "quit") { Exit = true; Message = "Возврат в главное меню."; Revision++; return; }
-        if (command == "help") { Message = "Команды справа. В сетевой игре день меняется после команды «далее» от обоих игроков."; Revision++; return; }
+        if (command == "help") { Message = "Откройте кнопку [?] для подробной справки по управлению и игровым механикам."; Revision++; return; }
         if (command is "map" or "status") { Message = "Состояние компании обновлено."; Revision++; return; }
         if (command == "market" && p.Length == 2)
         {
-            try { Market = Game.CityKey(p[1]); Message = "Открыт рынок: " + Ru.Name(Market); }
+            try { Market = Game.CityKey(p[1]); ComparedMarket = null; Message = "Открыт рынок: " + Ru.Name(Market); }
+            catch (ArgumentException e) { Error = true; Message = "Ошибка: " + e.Message; }
+            Revision++;
+            return;
+        }
+        if (command == "compare" && p.Length == 3)
+        {
+            try
+            {
+                string first = Game.CityKey(p[1]), second = Game.CityKey(p[2]);
+                if (first == second) throw new ArgumentException("Для сравнения выберите два разных города.");
+                Market = first;
+                ComparedMarket = second;
+                Message = $"Сравниваются рынки: {Ru.Name(Market)} и {Ru.Name(ComparedMarket)}.";
+            }
             catch (ArgumentException e) { Error = true; Message = "Ошибка: " + e.Message; }
             Revision++;
             return;
@@ -126,6 +141,10 @@ public sealed class Session : IDisposable
             Message = command switch
             {
                 "market" when p.Length == 2 && !remote => SelectMarket(p[1]),
+                "intel" when p.Length == 2 => Game.BuyMarketInfo(p[1], player),
+                "accept" when p.Length == 2 => Game.AcceptContract(Number(1), player),
+                "deliver" when p.Length == 3 => Game.DeliverContract(Number(1), Number(2), player),
+                "enterprise" when p.Length == 2 => Game.BuyEnterprise(Number(1), player),
                 "buy" when p.Length == 4 => Game.Trade(Number(1), p[2], Number(3), true, player),
                 "sell" when p.Length == 4 => Game.Trade(Number(1), p[2], Number(3), false, player),
                 "travel" when p.Length == 3 => Game.Travel(Number(1), p[2], player),
@@ -166,7 +185,7 @@ public sealed class Session : IDisposable
         HostReady = HostReady, ClientReady = ClientReady
     });
 
-    private string SelectMarket(string city) { Market = Game.CityKey(city); return "Открыт рынок: " + Ru.Name(Market); }
+    private string SelectMarket(string city) { Market = Game.CityKey(city); ComparedMarket = null; return "Открыт рынок: " + Ru.Name(Market); }
     private string Save() { Game.Save(AppPaths.SaveFile); return "Игра сохранена."; }
     private string Load() { Game = Game.Load(AppPaths.SaveFile); return "Игра загружена."; }
     public void Dispose() => link?.Dispose();

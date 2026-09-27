@@ -1,14 +1,15 @@
 namespace TradeCompany;
 
-public enum MenuChoice { NewGame, LoadGame, HostGame, JoinGame }
+public enum MenuChoice { NewGame, LoadGame, HostGame, JoinGame, Update }
 
 public static class MainMenu
 {
-    private static readonly string[] Items = ["НОВАЯ ИГРА", "ЗАГРУЗИТЬ ИГРУ", "СОЗДАТЬ СЕТЕВУЮ ИГРУ", "ПОДКЛЮЧИТЬСЯ", "ВЫХОД"];
+    private static readonly string[] Items = ["НОВАЯ ИГРА", "ЗАГРУЗИТЬ ИГРУ", "СОЗДАТЬ СЕТЕВУЮ ИГРУ", "ПОДКЛЮЧИТЬСЯ", "ПРОВЕРИТЬ ОБНОВЛЕНИЯ", "ВЫХОД"];
     private static string? error;
 
     public static MenuChoice? Choose()
     {
+        using var events = new PointerInput();
         int selected = 0;
         int oldWidth = 0, oldHeight = 0;
         bool dirty = true;
@@ -29,8 +30,22 @@ public static class MainMenu
                 Draw(selected, width, height);
                 dirty = false;
             }
-            if (!Console.KeyAvailable) { Thread.Sleep(30); continue; }
-            var key = Console.ReadKey(intercept: true);
+            if (!events.TryRead(out var action)) { Thread.Sleep(30); continue; }
+            var key = action.Key ?? default;
+            if (action.Wheel != 0)
+            {
+                selected = (selected - action.Wheel + Items.Length) % Items.Length;
+                dirty = true;
+            }
+            if (action.Click)
+            {
+                int boxWidth = Math.Min(62, Math.Max(30, width - 4));
+                int x = Math.Max(0, (width - boxWidth) / 2), y = Math.Max(0, (height - 20) / 2);
+                int row = action.Y - y - 5;
+                if (action.X < x || action.X >= Math.Min(width - 1, x + boxWidth) || action.Y >= height - 1 || row < 0 || row % 2 != 0 || row / 2 >= Items.Length) continue;
+                selected = row / 2;
+                key = new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false);
+            }
             switch (key.Key)
             {
                 case ConsoleKey.UpArrow:
@@ -62,6 +77,7 @@ public static class MainMenu
                         1 => MenuChoice.LoadGame,
                         2 => MenuChoice.HostGame,
                         3 => MenuChoice.JoinGame,
+                        4 => MenuChoice.Update,
                         _ => null
                     };
             }
@@ -94,9 +110,9 @@ public static class MainMenu
             string marker = i == selected ? "> " : "  ";
             At(5 + i * 2, Center(marker + Items[i], boxWidth), i == selected ? Ink.Command : Ink.Text);
         }
-        At(16, Center("Стрелки / W,S — выбор    Enter — открыть", boxWidth), Ink.Muted);
+        At(17, Center("ЛКМ — открыть | Стрелки / W,S + Enter", boxWidth), Ink.Muted);
         bool saveExists = File.Exists(AppPaths.SaveFile);
-        At(17, Center(saveExists ? "Сохранённая игра найдена" : "Сохранённой игры пока нет", boxWidth), saveExists ? Ink.Success : Ink.Muted);
+        At(18, Center($"Версия {Updater.CurrentVersion} | " + (saveExists ? "сохранение найдено" : "сохранения пока нет"), boxWidth), saveExists ? Ink.Success : Ink.Muted);
         At(19, Center(error ?? "", boxWidth), error is null ? Ink.Text : Ink.Error);
     }
 
