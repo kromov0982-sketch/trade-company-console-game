@@ -20,8 +20,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          dotnet publish TradeCompany.csproj -c Release -r win-x64 --self-contained true -o release/portable /p:Version=$version /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false
-          Copy-Item -Recurse -Force Packaging/* release/portable/
+          dotnet publish TradeCompany.csproj -c Release -r win-x64 --self-contained true -o release/portable --source https://api.nuget.org/v3/index.json /p:Version=$version /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false
           Compress-Archive -Path @('release/portable/TradeCompany.exe','Packaging/saves','Packaging/logs','Packaging/КАК ЗАПУСТИТЬ.txt') -DestinationPath release/TradeCompany-Windows-x64.zip -Force
           $hash = (Get-FileHash release/TradeCompany-Windows-x64.zip -Algorithm SHA256).Hash.ToLower()
           Set-Content -Encoding ascii release/TradeCompany-Windows-x64.zip.sha256 "$hash  TradeCompany-Windows-x64.zip"
