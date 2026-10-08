@@ -1,0 +1,8 @@
+.godot/
+.DS_Store
+bin/
+obj/
+*.user
+*.log
+preview*.png
+preview*.png.import

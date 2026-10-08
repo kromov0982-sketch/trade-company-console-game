@@ -1,0 +1,15 @@
+{
+  "grain": "wheat",
+  "wood": "logs",
+  "stone": "mountain",
+  "ore": "gem",
+  "coal": "flame",
+  "wool": "spool",
+  "flour": "paper-bag",
+  "ingots": "cuboid",
+  "lumber": "columns-3",
+  "cutstone": "brick-wall",
+  "tools": "hammer",
+  "cloth": "shirt",
+  "bread": "croissant"
+}
